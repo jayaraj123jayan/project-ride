@@ -13,7 +13,7 @@ function Register() {
   const handleRegister = (e) => {
     console.log("Registering:", name, email, password, username, bio);
     e.preventDefault();
-    fetch("http://localhost:5000/users/register", {
+    fetch("http://34.135.133.117:5000/users/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

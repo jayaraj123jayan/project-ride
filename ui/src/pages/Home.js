@@ -28,7 +28,7 @@ function Home() {
       return;
     }
 
-    fetch("http://localhost:5000/rides/my-rides", {
+    fetch("http://34.135.133.117:5000/rides/my-rides", {
       headers: {
         "Content-Type": "application/json",
         Authorization: "Bearer " + user.token,

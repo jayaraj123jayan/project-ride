@@ -9,7 +9,7 @@ function Login() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    fetch("http://localhost:5000/users/login", {
+    fetch("http://34.135.133.117:5000/users/login", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

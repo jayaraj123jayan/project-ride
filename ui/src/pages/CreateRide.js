@@ -108,7 +108,7 @@ function CreateRide() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/rides/create", {
+      const res = await fetch("http://34.135.133.117:5000/rides/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
