@@ -22,7 +22,7 @@ var cors = require("cors");
 
 app.use(
   cors({
-    origin: "http://localhost:3000",  // Allow the React app
+    origin: "http://34.135.133.117:3000",  // Allow the React app
     methods: "GET,POST,PUT,DELETE,OPTIONS",
     allowedHeaders: "Content-Type, Authorization",
     credentials: true,
