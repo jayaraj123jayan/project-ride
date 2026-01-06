@@ -6,9 +6,10 @@ function Home() {
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const storedUser = localStorage.getItem("user");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    
     if (!storedUser) {
       navigate("/login");
       return;
@@ -35,10 +36,12 @@ function Home() {
       },
     })
       .then((res) => res.ok? res.json(): Promise.reject(res))
-      .then((data) => setRides(data))
+      .then((data) => {
+        setRides(data);
+      })
       .catch((e) => {(e.status===403 || e.status===401)?  navigate("/login") : setError("Failed to load rides")})
       .finally(() => setLoading(false));
-  }, [navigate]);
+  }, [navigate, storedUser]);
 
   if (loading) {
     return <p style={{ padding: "20px" }}>Loading your rides...</p>;
@@ -82,7 +85,7 @@ function Home() {
 
       {/* Rides List */}
       {rides.length === 0 ? (
-        <p>You have no rides.</p>
+        <p>You have no rides. <a href="/create-ride">Create</a> one to bigin.</p>
       ) : (
         rides.map((ride) => (
           <Link
@@ -114,6 +117,26 @@ function Home() {
                 <strong>Members:</strong>{" "}
                 {Array.isArray(ride.members) ? ride.members.length : "0"}
               </p>
+              <p style={{color: ride.status === 'started' ? "green" : "orange"}}>{ride.status}</p>
+              {ride.members.filter(m=>m.status==='joined' && JSON.parse(storedUser).username === m.username).length > 0 ? <p style={{color: "blue"}}>Joined</p> : ride.status === 'started' && <button type="button" onClick={(e) => {
+                e.preventDefault();
+                fetch(`http://34.135.133.117:5000/rides/id/${ride.id}/join`, {
+                  method: "POST", 
+                  headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + JSON.parse(localStorage.getItem("user")).token,
+                },
+              })
+              .then((res) => {
+                if (!res.ok) {
+                  alert("Failed to join the ride.");
+                }
+              })
+              .catch(() => alert("An error occurred while trying to join the ride."));
+                }} style={{ padding: "5px 10px", borderRadius: "5px", backgroundColor: "#111", color: "#fff", border: "none", cursor: "pointer" }}>
+                Join
+              </button>}
+              
             </div>
           </Link>
         ))

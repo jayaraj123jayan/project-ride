@@ -11,5 +11,10 @@ const verifyToken = (req, res, next) => {
     next();
   });
 };
+const verifyTokenIO = (token) => {
+  if (!token) throw new Error('Access denied');
 
-module.exports = { verifyToken, secret };
+  const user = jwt.verify(token, secret);
+  return user;
+}
+module.exports = { verifyToken, verifyTokenIO, secret };

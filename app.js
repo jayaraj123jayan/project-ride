@@ -20,11 +20,21 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 var cors = require("cors");
 
+const whitelist = [
+  "http://localhost:3000",
+  "http://192.168.1.3:3000",
+  "http://34.135.133.117:3000",
+];
+
 app.use(
   cors({
-    origin: "http://34.135.133.117:3000",  // Allow the React app
-    methods: "GET,POST,PUT,DELETE,OPTIONS",
-    allowedHeaders: "Content-Type, Authorization",
+    origin: (origin, callback) => {
+      if (!origin || whitelist.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked: " + origin));
+      }
+    },
     credentials: true,
   })
 );

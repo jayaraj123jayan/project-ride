@@ -3,7 +3,7 @@ var router = express.Router();
 const db = require('../services/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { secret } = require('../services/auth');
+const { secret, verifyToken } = require('../services/auth');
 
 /* GET users listing. */
 router.post('/register', async function(req, res, next) {
@@ -39,6 +39,19 @@ router.post('/login', (req, res, next) => {
     user.password = null;
     var token = getJwtToken(user);
     res.send({...user, token: token});
+  });
+});
+
+router.get('/search', verifyToken, (req, res, next) => {
+  var searchUsername = `%${req.query.username}%`;
+  db.query('SELECT * FROM users WHERE name like ? or username like ?;', [searchUsername, searchUsername], (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(500).send("Error");
+      return;
+    }
+    res.send(results? results.map(i=>{return {...i, password: null}}): []);
+    return;
   });
 });
 

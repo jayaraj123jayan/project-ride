@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
@@ -23,9 +23,11 @@ function CreateRide() {
   const [start, setStart] = useState({ address: "", lat: null, lng: null });
   const [destination, setDestination] = useState({ address: "", lat: null, lng: null });
   const [time, setTime] = useState("");
-  const [members, setMembers] = useState("");
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [usersearchResults, setUserSearchResults] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
 
   const startInputRef = useRef(null);
   const destInputRef = useRef(null);
@@ -62,6 +64,58 @@ function CreateRide() {
     }
   };
 
+  useEffect(() => {
+    const fetchUserSearchResults = async () => {
+      if (!userSearchQuery) {
+        setUserSearchResults([]);
+        return;
+      }
+
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) {
+        navigate("/login");
+        return;
+      }
+
+      let user;
+      try {
+        user = JSON.parse(storedUser);
+      } catch {
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
+      }
+
+      if (!user.token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://34.135.133.117:5000/users/search?username=${encodeURIComponent(userSearchQuery)}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + user.token,
+          },
+        });
+        if(res.status===403 || res.status===401){
+          navigate("/login");
+          return;
+        }
+        if (!res.ok) {
+          throw new Error("Failed to search users");
+        }
+
+        const data = await res.json();
+        setUserSearchResults(data);
+      } catch (err) {
+        console.error("User search error", err);
+      }
+    };
+
+    fetchUserSearchResults();
+  }, [userSearchQuery, navigate]);
+
   const handleCreateRide = async (e) => {
     e.preventDefault();
 
@@ -85,11 +139,6 @@ function CreateRide() {
       return;
     }
 
-    const memberIds = members
-      .split(",")
-      .map((id) => parseInt(id.trim()))
-      .filter((id) => !isNaN(id));
-
     if (!start.lat || !destination.lat) {
       setError("Please select start and destination");
       return;
@@ -101,7 +150,8 @@ function CreateRide() {
       start_from: `${JSON.stringify(start)}`,
       destination: `${JSON.stringify(start)}`,
       time,
-      members: memberIds,
+      memberUsernames: members,
+      status: "created",
     };
 
     setLoading(true);
@@ -169,9 +219,35 @@ function CreateRide() {
           {destination.lat && <Marker position={[destination.lat, destination.lng]}><Popup>{destination.address}</Popup></Marker>}
         </MapContainer>
         <input type="text" value={destination.address} readOnly style={inputStyle} />
-
+        <label style={{ marginBottom: "5px", fontWeight: "bold" }}>Time:</label>
         <input type="datetime-local" value={time} onChange={(e) => setTime(e.target.value)} required style={inputStyle} />
-        <input type="text" placeholder="Members (comma-separated IDs)" value={members} onChange={(e) => setMembers(e.target.value)} style={inputStyle} />
+        <label style={{ marginBottom: "5px", fontWeight: "bold" }}>Members:</label>
+        <input type="text" placeholder="Search member" value={userSearchQuery} onChange={(e) => setUserSearchQuery(e.target.value)} style={inputStyle} />
+        {usersearchResults.length !== 0 && userSearchQuery&&userSearchQuery.length>0&&<div style={{ maxHeight: "100px", overflowY: "auto", marginBottom: "10px", border: "1px solid #ddd", padding: "10px" }}>
+          {usersearchResults.map((user, index) => (
+            <div key={index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "5px" }}>
+              <span>{user.username} ({user.name})</span>
+              <button type="button" onClick={() => {
+                if (!members.includes(user.username)) {
+                  setMembers([...members, user.username]);
+                }
+              }} style={{ padding: "5px 10px", borderRadius: "5px", backgroundColor: "#111", color: "#fff", border: "none", cursor: "pointer" }}>
+                Add
+              </button>
+            </div>
+          ))}
+        </div>
+        }
+        {usersearchResults.length === 0 && userSearchQuery.length > 0 && <p style={{ marginBottom: "10px" }}>No users found.</p>}
+        <div>
+          {members.map((item, index) => (
+            <span key={index} style={{ display: "inline-block", backgroundColor: "#eee", padding: "5px 10px", borderRadius: "15px", margin: "5px" }}>
+              {item} <span style={{ cursor: "pointer", color: "red" }} onClick={() => {
+                setMembers(members.filter(m => m !== item));
+              }}>&times;</span>
+            </span>
+          ))}
+        </div>
 
         <button type="submit" disabled={loading} style={{
           marginTop: "15px", padding: "12px", backgroundColor: "#111", color: "#fff",
