@@ -132,7 +132,10 @@ router.get('/my-rides', verifyToken, (req, res, next) => {
       return res.send("Error fetching rides: " + err);
     }
 
-    res.send(results);
+    res.send(results.map(ride => ({
+      ...ride,
+      members: !Array.isArray(ride.members)? JSON.parse(ride.members || '[]') : []
+    })));
   });
 });
 
